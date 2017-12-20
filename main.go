@@ -6,6 +6,7 @@ import (
 	"echo_note/controller"
 	"time"
 	"fmt"
+	"github.com/labstack/echo/middleware"
 )
 
 func wcookie(c echo.Context) error {
@@ -39,21 +40,40 @@ func rallcookie(c echo.Context) error {
 }
 
 func main() {
+	//实例化echo
 	e := echo.New()
 
+	//注册路由
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, http.StatusText(http.StatusOK))
 	})
 
+	//注册到控制器
 	e.GET("/hello", controller.Hello)
 
+	//注册函数
 	e.GET("/wcookie", wcookie)
 	e.GET("/rcookie", rcookie)
 	e.GET("/rallcookie", rallcookie)
 
+	//注册组路由
+	g := e.Group("/admin")
+
+	//中间件
+	g.Use(middleware.BasicAuth(func(username string, password string, c echo.Context) (bool, error) {
+		if username == "joe" && password == "secret" {
+			return true, nil
+		}
+		return false, nil
+	}))
+	g.GET("/login", controller.Hello)
+
+	//监听端口
 	s := &http.Server{
 		Handler: e,
 		Addr: ":8080",
 	}
+
+	//运行服务
 	e.Logger.Fatal(s.ListenAndServe())
 }
